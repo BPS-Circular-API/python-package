@@ -53,4 +53,42 @@ class Circular:
         if json['http_status'] == 200:
             return json['data'] if amount == -1 else json['data'][:amount]
 
-    
+    def search(self, query: str or int) -> dict or None:
+        if type(query) == int:
+            query = int(query)
+        elif type(query) != str:
+            raise ValueError("Invalid Query")
+
+        params = {'title': query}
+
+        request = requests.get(self.url + "search", params=params)
+        json = request.json()
+
+        try:
+            json['http_status']
+
+        except KeyError:
+            raise ValueError("Invalid API Response")
+
+        if json['http_status'] == 200:
+            return json['data']
+
+    # /getpng endpoint
+    def getpng(self, url: str) -> list or None:
+        if type(url) != str:
+            raise ValueError("Invalid URL")
+
+        params = {'url': url}
+
+        request = requests.get(self.url + "getpng", params=params)
+        json = request.json()
+
+        try:
+            json['http_status']
+
+        except KeyError:
+            raise ValueError("Invalid API Response")
+
+        if json['http_status'] == 200:
+            return json['data']
+
