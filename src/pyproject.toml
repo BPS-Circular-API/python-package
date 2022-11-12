@@ -1,3 +1,31 @@
+[project]
+name = "pybpsapi"
+version = "1.0.1"
+description = "This package is a Python wrapper for the BPS API. It supports all the five endpoints of the API, and also contains a good circular-checking system."
+author = "Raj Dave"
+author-email = "rajdave8002@gmail.com"
+homepage = "https://bpsapi.rajtech.me/"
+license = "MIT"
+keywords = ["bpsapi", "bps", "api", "wrapper", "python", "python3"]
+requires-python = ">=3.6"
+dependencies = ["requests"]
+
+
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatchling]
+name = "pybpsapi"
+version = "1.0.0"
+description = "This package is a Python wrapper for the BPS API. It supports all the five endpoints of the API, and also contains a good circular-checking system."
+author = "Raj Dave"
+author-email = "rajdave8002@gmail.com"
+homepage = "https://bpsapi.rajtech.me/"
+license = "MIT"
+keywords = ["bpsapi", "bps", "api", "wrapper", "python", "python3"]
+
+[tool.hatchling.dependencies]
+python = ">=3.6"
+requests = "*"
