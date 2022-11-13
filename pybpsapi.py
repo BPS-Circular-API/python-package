@@ -1,4 +1,5 @@
 import requests
+import pickle
 
 
 class API:
@@ -100,7 +101,8 @@ class API:
 
 
 class CircularChecker:
-    def __init__(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False, **kwargs):
+    def __init__(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False,
+                 **kwargs):
         self.url = url
         self.category = category
         self._cache = []
@@ -122,7 +124,6 @@ class CircularChecker:
         self.cache_method = cache_method
 
         if cache_method is not None:
-            import pickle
             if cache_method == "database":
                 try:
                     self.db_name = kwargs['db_name']
@@ -141,7 +142,8 @@ class CircularChecker:
                 self._cur = self._con.cursor()
 
                 self._cur.execute(f"CREATE TABLE IF NOT EXISTS {self.db_table} (title TEXT, category TEXT, data BLOB)")
-                self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)", ("circular_list", self.category, pickle.dumps([])))
+                self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
+                                  ("circular_list", self.category, pickle.dumps([])))
                 self._con.commit()
 
             elif cache_method == "pickle":
@@ -160,7 +162,6 @@ class CircularChecker:
                 # create a pickle file if it doesn't exist
                 if not os.path.exists(self.pickle_path + f"/{self.pickle_name}.pickle"):
                     with open(self.pickle_path + f"/{self.pickle_name}.pickle", "wb") as f:
-                        import pickle
                         pickle.dump([], f)
 
             else:
@@ -170,7 +171,6 @@ class CircularChecker:
             pass
 
     def get_cache(self) -> list[list]:
-        import pickle
         if self.cache_method == "database":
             self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
             res = self._cur.fetchone()
@@ -188,10 +188,10 @@ class CircularChecker:
             return self._cache
 
     def _set_cache(self, data, title: str = "circular_list"):
-        import pickle
         if self.cache_method == "database":
             self._cur.execute(f"DELETE FROM {self.db_table} WHERE category = ?", (self.category,))
-            self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)", (title, self.category, pickle.dumps(data)))
+            self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
+                              (title, self.category, pickle.dumps(data)))
             self._con.commit()
 
         elif self.cache_method == "pickle":
