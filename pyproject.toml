@@ -1,6 +1,6 @@
 [project]
 name = "pybpsapi"
-version = "1.0.1"
+version = "1.0.2"
 description = "This package is a Python wrapper for the BPS API. It supports all the five endpoints of the API, and also contains a good circular-checking system."
 author = "Raj Dave"
 author-email = "rajdave8002@gmail.com"
@@ -9,6 +9,7 @@ license = "MIT"
 keywords = ["bpsapi", "bps", "api", "wrapper", "python", "python3"]
 requires-python = ">=3.6"
 dependencies = ["requests"]
+readme = "README.md"
 
 
 
