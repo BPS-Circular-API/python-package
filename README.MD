@@ -121,7 +121,7 @@ The `CircularChecker` class is a bit more complicated than the `API` class. It i
 #### Parameters
 
 - `category` - The category to check for new circulars. Can be a category name (general|ptm|exam) or a category ID.
-- `url` (optional) - The BPSAPI URL to use. Defaults to `https://bpsapi.rajtech.me/v1`.
+- `url` (optional) - The BPS API URL to use. Defaults to `https://bpsapi.rajtech.me/v1`.
 - `cache_method` (optional) - The method to use to cache the latest circular. Can be `None` for memory, `pickle` to use a `.pickle` file, or `database` for a local SQLITE3 Database. Defaults to `memory`.
 - `debug` (optional) - Whether to enable debug mode. This enables access to the `set_cache` and `refresh cache` methods. Defaults to `False`.
 

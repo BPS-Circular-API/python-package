@@ -27,7 +27,7 @@ class API:
         try:
             json['http_status']
         except KeyError:
-            raise ValueError("Invalid API Response")
+            raise ConnectionError("Invalid API Response")
         if json['http_status'] == 200:
             return json['data']
 
@@ -53,7 +53,7 @@ class API:
         try:
             json['http_status']
         except KeyError:
-            raise ValueError("Invalid API Response")
+            raise ConnectionError("Invalid API Response")
         if json['http_status'] == 200:
             return json['data'] if amount == -1 else json['data'][:amount]
 
@@ -73,7 +73,7 @@ class API:
             json['http_status']
 
         except KeyError:
-            raise ValueError("Invalid API Response")
+            raise ConnectionError("Invalid API Response")
 
         if json['http_status'] == 200:
             return json['data']
@@ -93,7 +93,7 @@ class API:
             json['http_status']
 
         except KeyError:
-            raise ValueError("Invalid API Response")
+            raise ConnectionError("Invalid API Response")
 
         if json['http_status'] == 200:
             return json['data']
