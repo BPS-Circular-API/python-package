@@ -275,6 +275,19 @@ checker_group.add(checker)
 checker_group.add(checker2)
 ```
 
+or, you could create a new `CircularChecker` object inside the `CircularCheckerGroup` object.
+
+```python
+# Import the module
+import pybpsapi
+
+# Create an instance of the CircularCheckerGroup class
+checker_group = pybpsapi.CircularCheckerGroup()
+
+# Create a new CircularChecker object inside the CircularCheckerGroup object
+checker_group.create(category="general")
+checker_group.create(category="ptm", cache_method="pickle", pickle_path=".", pickle_name="cache.pickle") # The kwargs are passed to the CircularChecker class
+```
 
 ### The `CircularCheckerGroup.check()`
 
