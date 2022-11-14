@@ -246,10 +246,10 @@ class CircularCheckerGroup:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 
-    def add_checker(self, checker: CircularChecker):
+    def add(self, checker: CircularChecker):
         self._checkers.append(checker)
 
-    def create_checker(self, category, url: str = "https://bpsapi.rajtech.me/v1/",cache_method=None, debug: bool = False, **kwargs):
+    def create(self, category, url: str = "https://bpsapi.rajtech.me/v1/",cache_method=None, debug: bool = False, **kwargs):
         checker = CircularChecker(category, url, cache_method, debug, **kwargs)
         self._checkers.append(checker)
 
