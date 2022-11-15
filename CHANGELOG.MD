@@ -20,14 +20,14 @@ All notable changes to this project will be documented in this file.
 - Improvements 
 - README.md
 
-## v1.1.0 - 12/11/2022
+## v1.1.0 - 14/11/2022
 
 ### Added
 - `CircularCheckerGroup` class
 - Updated README.md
 - Added CHANGELOG.md
 
-## v1.1.1 - 13/11/2022
+## v1.1.1 - 15/11/2022
 
 ### Added
 - `refesh_cache()` and `get_cache()` methods to `CircularCheckerGroup` class
