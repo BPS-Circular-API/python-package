@@ -238,18 +238,28 @@ class CircularChecker:
 
 
 class CircularCheckerGroup:
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         self._checkers = []
+
+        if kwargs.get("debug"):
+            self.debug = True
 
         for arg in args:
             if type(arg) != CircularChecker:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 
-    def add(self, checker: CircularChecker):
-        self._checkers.append(checker)
+        if self.debug:
+            self.checkers = self._checkers
 
-    def create(self, category, url: str = "https://bpsapi.rajtech.me/v1/",cache_method=None, debug: bool = False, **kwargs):
+    def add(self, checker: CircularChecker, *args: CircularChecker):
+        self._checkers.append(checker)
+        for arg in args:
+            if type(arg) != CircularChecker:
+                raise ValueError("Invalid CircularChecker Object")
+            self._checkers.append(arg)
+
+    def create(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False, **kwargs):
         checker = CircularChecker(category, url, cache_method, debug, **kwargs)
         self._checkers.append(checker)
 
@@ -257,4 +267,14 @@ class CircularCheckerGroup:
         return_dict = {}
         for checker in self._checkers:
             return_dict[checker.category] = checker.check()
+        return return_dict
+
+    def refresh_cache(self):
+        for checker in self._checkers:
+            checker.refresh_cache()
+
+    def get_cache(self) -> dict[list[list]]:
+        return_dict = {}
+        for checker in self._checkers:
+            return_dict[checker.category] = checker.get_cache()
         return return_dict

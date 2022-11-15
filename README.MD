@@ -15,7 +15,7 @@ pip install pybpsapi
 
 ## Contributing
 
-Contributions are welcome! Please feel free to open an issue or a pull request on the [GitHub repository](https://bpsapi.rajtech.me/r/
+Contributions are welcome! Please feel free to open an issue or a pull request on the [GitHub repository](https://bpsapi.rajtech.me/r/python-package)
 
 
 ## Documentation
@@ -241,7 +241,8 @@ The `CircularCheckerGroup` class is used to check for new circulars in multiple 
 
 #### Parameters
 
-- `*args` - Premade `CircularChecker` objects can be directly passed to the `CircularCheckerGroup` class.
+- `*args` - Pre-made `CircularChecker` objects can be directly passed to the `CircularCheckerGroup` class.
+- `**kwargs` - The only kwargs is `debug` which exposes the _checkers variable. Defaults to `False`.
 
 #### Setup
 
@@ -289,7 +290,7 @@ checker_group.create(category="general")
 checker_group.create(category="ptm", cache_method="pickle", pickle_path=".", pickle_name="cache.pickle") # The kwargs are passed to the CircularChecker class
 ```
 
-### The `CircularCheckerGroup.check()`
+#### `CircularCheckerGroup.check()`
 
 This method checks for new circulars in all the categories in the `CircularCheckerGroup` object. It returns a list of the new circular(s), if any.
 
@@ -309,3 +310,81 @@ new_circulars = checker_group.check()
 ```
 
 The returned variable will be a `dict` with each key being the name or id of the category with the list inside it.
+
+
+#### `CircularCheckerGroup.create(...)`
+
+The `create()` method is used to create a `CircularChecker` object and add it to the group.
+
+##### Parameters
+
+- `category`: string | int. The category id or the there main category names of the circular you want to get. Can be one of 'general', 'ptm', 'exam' or an integer category ID. [Mandatory]
+- `url` (optional): string. The URL of the BPS Circular API instance you want to interact with. It is set to `https://bpsapi.rajtech.me` by default. [Optional]
+- `cache_method` (optional): string. The method to be used for caching. Can be one of 'pickle' or 'database'. Defaults to 'None' (Memory). [Optional]
+- `debug` (optional): bool. Whether to enable debug mode or not. Defaults to False. [Optional]
+- `**kwargs` (optional): Keyword arguments to be passed to the `CircularChecker` object.
+
+
+```python
+# Import the package
+import pybpsapi
+
+# Create a CircularCheckerGroup object
+group = pybpsapi.CircularCheckerGroup(debug=True)
+
+# Create a CircularChecker object and add it to the group
+group.create(category="general", cache_method="pickle", pickle_path=".", pickle_name="cache")
+
+print(len(group.checkers)) # 1, since we added one checker to the group using the create() method
+```
+
+
+#### `CircularCheckerGroup.refresh_cache()`
+
+The `refresh_cache()` method is used to refresh the cache of all the `CircularChecker` objects in the group.
+
+This method does not take any parameters.
+
+```python
+# Import the package
+import pybpsapi
+
+# Create a CircularChecker object
+checker = pybpsapi.CircularChecker(category="general")
+
+# Create a CircularCheckerGroup object
+group = pybpsapi.CircularCheckerGroup()
+
+# Add the checker to the group
+group.add(checker)
+
+# Refresh the cache
+group.refresh_cache()
+```
+
+#### `CircularCheckerGroup.add(...)`
+
+
+The `add()` method is used to add a `CircularChecker` object to the group.
+
+
+##### Parameters
+
+- `checker`: A `CircularChecker` object. The object to be added to the group.
+- `*args` (optional): Multiple `CircularChecker` objects. These objects will be added to the group.
+
+
+```python
+# Import the package
+import pybpsapi
+
+# Create a CircularChecker object
+checker = pybpsapi.CircularChecker(category="general")
+checker2 = pybpsapi.CircularChecker(category="ptm")
+
+# Create a CircularCheckerGroup object
+group = pybpsapi.CircularCheckerGroup()
+
+# Add the checker to the group
+group.add(checker, checker2)
+```
