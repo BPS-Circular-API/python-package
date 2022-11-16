@@ -34,3 +34,8 @@ All notable changes to this project will be documented in this file.
 - More minor improvements
 - Debug mode to `CircularCheckerGroup` class
 - Updated README.md
+
+## v1.1.2 - 16/11/2022
+
+### Fixed
+- A bug with `CircularCheckerGroup` class where debug being False would cause an error
