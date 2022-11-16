@@ -243,6 +243,8 @@ class CircularCheckerGroup:
 
         if kwargs.get("debug"):
             self.debug = True
+        else:
+            self.debug = False
 
         for arg in args:
             if type(arg) != CircularChecker:
