@@ -10,7 +10,7 @@ class API:
 
     # /latest endpoint
     def latest(self, category: str or int, cached: bool = False) -> dict or None:
-        """The /latest endpoint returns the latest circular from a particular category"""
+        """The `/latest` endpoint returns the latest circular from a particular category"""
         if type(category) == int:
             category = int(category)
             if not 1 < category < 100:
@@ -34,7 +34,7 @@ class API:
 
     # /list endpoint
     def list(self, category: str or int, amount: int = -1) -> list or None:
-        """The /list endpoint returns a list of circulars from a particular category"""
+        """The `/list` endpoint returns a list of circulars from a particular category"""
         if type(category) == int:
             category = int(category)
             if not 1 < category < 100:
@@ -59,7 +59,7 @@ class API:
             return json['data'] if amount == -1 else json['data'][:amount]
 
     def search(self, query: str or int) -> dict or None:
-        """The /search endpoint lets you search for a circular by its name or ID"""
+        """The `/search` endpoint lets you search for a circular by its name or ID"""
         if type(query) == int:
             query = int(query)
         elif type(query) != str:
@@ -81,7 +81,7 @@ class API:
 
     # /getpng endpoint
     def getpng(self, url: str) -> list or None:
-        """The /getpng endpoint lets you get the pngs from a circular"""
+        """The `/getpng` endpoint lets you get the pngs from a circular"""
         if type(url) != str:
             raise ValueError("Invalid URL")
 
@@ -189,9 +189,8 @@ class CircularChecker:
 
     def _set_cache(self, data, title: str = "circular_list"):
         if self.cache_method == "database":
-            self._cur.execute(f"DELETE FROM {self.db_table} WHERE category = ?", (self.category,))
-            self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
-                              (title, self.category, pickle.dumps(data)))
+            self._cur.execute(f"DELETE FROM ? WHERE category = ?", (self.db_table, self.category,))
+            self._cur.execute(f"INSERT INTO ? VALUES (?, ?, ?)", (self.db_table, title, self.category, pickle.dumps(data)))
             self._con.commit()
 
         elif self.cache_method == "pickle":
@@ -226,7 +225,7 @@ class CircularChecker:
 
             new_circular_objects = [i for i in final_dict if i not in old_cached]
 
-            print(f"{len(new_circular_objects)} new circular(s) found")
+            # print(f"{len(new_circular_objects)} new circular(s) found")
 
             for circular in new_circular_objects:
                 return_dict.append(circular)
