@@ -141,9 +141,9 @@ class CircularChecker:
                 self._con = sqlite3.connect(self.db_path + f"/{self.db_name}.db")
                 self._cur = self._con.cursor()
 
-                self._cur.execute(f"CREATE TABLE IF NOT EXISTS {self.db_table} (title TEXT, category TEXT, data BLOB)")
-                self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
-                                  ("circular_list", self.category, pickle.dumps([])))
+                self._cur.execute("CREATE TABLE IF NOT EXISTS ? (title TEXT, category TEXT, data BLOB)", (self.db_table,))
+                self._cur.execute("INSERT INTO ? VALUES (?, ?, ?)",
+                                  (self.db_table, "circular_list", self.category, pickle.dumps([])))
                 self._con.commit()
 
             elif cache_method == "pickle":
@@ -172,7 +172,7 @@ class CircularChecker:
 
     def get_cache(self) -> list[list]:
         if self.cache_method == "database":
-            self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
+            self._cur.execute("SELECT * FROM ? WHERE category = ?", (self.db_table, self.category))
             res = self._cur.fetchone()
             if res is None:
                 return []
@@ -189,8 +189,8 @@ class CircularChecker:
 
     def _set_cache(self, data, title: str = "circular_list"):
         if self.cache_method == "database":
-            self._cur.execute(f"DELETE FROM ? WHERE category = ?", (self.db_table, self.category,))
-            self._cur.execute(f"INSERT INTO ? VALUES (?, ?, ?)", (self.db_table, title, self.category, pickle.dumps(data)))
+            self._cur.execute("DELETE FROM ? WHERE category = ?", (self.db_table, self.category,))
+            self._cur.execute("INSERT INTO ? VALUES (?, ?, ?)", (self.db_table, title, self.category, pickle.dumps(data)))
             self._con.commit()
 
         elif self.cache_method == "pickle":
