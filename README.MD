@@ -1,3 +1,11 @@
+![PyPI](https://img.shields.io/pypi/v/pybpsapi?style=for-the-badge)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/pybpsapi?style=for-the-badge)
+![Lines of code](https://img.shields.io/tokei/lines/github/BPS-Circular-API/python-package?style=for-the-badge)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/BPS-Circular-API/python-package?style=for-the-badge)
+![Python Version](https://img.shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11-blue?style=for-the-badge)
+![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/BPS-Circular-API/python-package?style=for-the-badge)
+---
+
 # pybpsapi - Python bindings for the BPS Circular API
 
 What is `pybpsapi`?
