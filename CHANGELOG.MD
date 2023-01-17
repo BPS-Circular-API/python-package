@@ -39,3 +39,12 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - A bug with `CircularCheckerGroup` class where debug being False would cause an error
+
+## v1.2.0 - 17/1/2023
+
+### Added
+- `refresh_db_con()` method to `CircularChecker` class in hopes to fix a bug
+
+### Fixed
+- A bug with `CircularChecker` class where the database connection would be closed after a while and would report 20 new circulars
+- Minor improvements
