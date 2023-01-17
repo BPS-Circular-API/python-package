@@ -48,3 +48,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - A bug with `CircularChecker` class where the database connection would be closed after a while and would report 20 new circulars
 - Minor improvements
+
+## v1.2.1 - 17/1/2023
+
+### Fixed
+- SQL syntax error
