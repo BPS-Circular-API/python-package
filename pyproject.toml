@@ -1,6 +1,6 @@
 [project]
 name = "pybpsapi"
-version = "1.2.0"
+version = "1.2.1"
 description = "This package is a Python wrapper for the BPS API. It supports all the five endpoints of the API, and also contains a good circular-checking system."
 author = "Raj Dave"
 author-email = "rajdave8002@gmail.com"
