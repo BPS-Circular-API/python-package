@@ -141,9 +141,9 @@ class CircularChecker:
                 self._con = sqlite3.connect(self.db_path + f"/{self.db_name}.db")
                 self._cur = self._con.cursor()
 
-                self._cur.execute(f"CREATE TABLE IF NOT EXISTS {self.db_table} (title TEXT, category TEXT, data BLOB)")
-                self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
-                                  ("circular_list", self.category, pickle.dumps([])))
+                self._cur.execute("CREATE TABLE IF NOT EXISTS ? (title TEXT, category TEXT, data BLOB)", (self.db_table,))
+                self._cur.execute("INSERT INTO ? VALUES (?, ?, ?)",
+                                  (self.db_table, "circular_list", self.category, pickle.dumps([])))
                 self._con.commit()
 
             elif cache_method == "pickle":
@@ -167,19 +167,13 @@ class CircularChecker:
             else:
                 raise ValueError("Invalid Cache Method")
 
-    def refresh_db_con(self):
-        if not self.cache_method == "database":
-            return
-
-        import sqlite3
-
-        self._con = sqlite3.connect(self.db_path + f"/{self.db_name}.db")
-        self._cur = self._con.cursor()
+        else:
+            pass
 
     def get_cache(self) -> list[list]:
         if self.cache_method == "database":
             self.refresh_db_con()
-            self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
+            self._cur.execute("SELECT * FROM ? WHERE category = ?", (self.db_table, self.category))
             res = self._cur.fetchone()
             if res is None:
                 return []
@@ -212,12 +206,10 @@ class CircularChecker:
     def _refresh_cache(self):
         request = requests.get(self.url + "list", params=self._params)
         json = request.json()
-
         try:
             json['http_status']
         except KeyError:
             raise ValueError("Invalid API Response")
-
         if json['http_status'] == 200:
             self._set_cache(json['data'])
 
@@ -248,10 +240,13 @@ class CircularChecker:
 
 
 class CircularCheckerGroup:
-    def __init__(self, *args, debug: bool = False):
+    def __init__(self, *args, **kwargs):
         self._checkers = []
 
-        self.debug = debug
+        if kwargs.get("debug"):
+            self.debug = True
+        else:
+            self.debug = False
 
         for arg in args:
             if type(arg) != CircularChecker:
@@ -268,8 +263,7 @@ class CircularCheckerGroup:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 
-    def create(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False,
-               **kwargs):
+    def create(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False, **kwargs):
         checker = CircularChecker(category, url, cache_method, debug, **kwargs)
         self._checkers.append(checker)
 
