@@ -141,9 +141,14 @@ class CircularChecker:
                 self._con = sqlite3.connect(self.db_path + f"/{self.db_name}.db")
                 self._cur = self._con.cursor()
 
-                self._cur.execute("CREATE TABLE IF NOT EXISTS ? (title TEXT, category TEXT, data BLOB)", (self.db_table,))
-                self._cur.execute("INSERT INTO ? VALUES (?, ?, ?)",
-                                  (self.db_table, "circular_list", self.category, pickle.dumps([])))
+                self._cur.execute(
+                    f"CREATE TABLE IF NOT EXISTS {self.db_table} (title TEXT, category TEXT, data BLOB)")
+
+                # check if the cache exists
+                self._cur.execute(f"SELECT * FROM {self.db_table} WHERE title = ? AND category = ?", ("circular_list", self.category))
+                if self._cur.fetchone() is None:
+                    self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
+                                    ("circular_list", self.category, pickle.dumps([])))
                 self._con.commit()
 
             elif cache_method == "pickle":
@@ -159,6 +164,7 @@ class CircularChecker:
                 import os
                 if not os.path.exists(self.pickle_path):
                     os.mkdir(self.pickle_path)
+
                 # create a pickle file if it doesn't exist
                 if not os.path.exists(self.pickle_path + f"/{self.pickle_name}.pickle"):
                     with open(self.pickle_path + f"/{self.pickle_name}.pickle", "wb") as f:
@@ -167,13 +173,9 @@ class CircularChecker:
             else:
                 raise ValueError("Invalid Cache Method")
 
-        else:
-            pass
-
     def get_cache(self) -> list[list]:
         if self.cache_method == "database":
-            self.refresh_db_con()
-            self._cur.execute("SELECT * FROM ? WHERE category = ?", (self.db_table, self.category))
+            self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
             res = self._cur.fetchone()
             if res is None:
                 return []
@@ -190,7 +192,6 @@ class CircularChecker:
 
     def _set_cache(self, data, title: str = "circular_list"):
         if self.cache_method == "database":
-            self.refresh_db_con()
             self._cur.execute(f"DELETE FROM {self.db_table} WHERE category = ?", (self.category,))
             self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
                               (title, self.category, pickle.dumps(data)))
@@ -221,16 +222,25 @@ class CircularChecker:
             self._refresh_cache()
             return []
 
+        self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
+        res = self._cur.fetchone()
+        if res is None:
+            cache = []
+        else:
+            cache = pickle.loads(res[2])
+
         self._refresh_cache()
         final_dict = self.get_cache()
 
         if final_dict != old_cached:  # If the old and new dict are not the same
-
             new_circular_objects = [i for i in final_dict if i not in old_cached]
-
             # print(f"{len(new_circular_objects)} new circular(s) found")
 
             for circular in new_circular_objects:
+                # check if they are in the database
+                if circular in cache:
+                    continue
+
                 return_dict.append(circular)
 
             return return_dict
@@ -263,7 +273,8 @@ class CircularCheckerGroup:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 
-    def create(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False, **kwargs):
+    def create(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False,
+               **kwargs):
         checker = CircularChecker(category, url, cache_method, debug, **kwargs)
         self._checkers.append(checker)
 
