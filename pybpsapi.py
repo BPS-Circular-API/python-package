@@ -8,6 +8,12 @@ class API:
     def __init__(self, url="https://bpsapi.rajtech.me/v1/"):
         self.url = url
 
+        json = requests.get(self.url + "categories").json()
+        if json['http_status'] == 200:
+            self.categories = json['data']
+        else:
+            raise ConnectionError("Invalid API Response. API says there are no categories.")
+
     # /latest endpoint
     def latest(self, category: str or int, cached: bool = False) -> dict or None:
         """The `/latest` endpoint returns the latest circular from a particular category"""
@@ -17,7 +23,7 @@ class API:
                 raise ValueError("Invalid category Number")
 
         else:
-            if category not in ["ptm", "general", "exam"]:
+            if category not in self.categories:
                 raise ValueError("Invalid category Name")
 
         params = {'category': category}
@@ -41,7 +47,7 @@ class API:
                 raise ValueError("Invalid category Number")
 
         else:
-            if category not in ["ptm", "general", "exam"]:
+            if category not in self.categories:
                 raise ValueError("Invalid category Name")
 
         if amount < -1:
@@ -107,6 +113,13 @@ class CircularChecker:
         self.category = category
         self._cache = []
 
+        json = requests.get(self.url + "categories").json()
+        if json['http_status'] == 200:
+            self.categories = json['data']
+        else:
+            raise ConnectionError("Invalid API Response. API says there are no categories.")
+
+
         if debug:
             self.set_cache = self._set_cache
             self.refresh_cache = self._refresh_cache
@@ -117,7 +130,8 @@ class CircularChecker:
                 raise ValueError("Invalid category Number")
 
         else:
-            if category not in ["ptm", "general", "exam"]:
+            if category not in self.categories:
+                print(category)
                 raise ValueError("Invalid category Name")
 
         self._params = {'category': category}
@@ -145,10 +159,11 @@ class CircularChecker:
                     f"CREATE TABLE IF NOT EXISTS {self.db_table} (title TEXT, category TEXT, data BLOB)")
 
                 # check if the cache exists
-                self._cur.execute(f"SELECT * FROM {self.db_table} WHERE title = ? AND category = ?", ("circular_list", self.category))
+                self._cur.execute(f"SELECT * FROM {self.db_table} WHERE title = ? AND category = ?",
+                                  ("circular_list", self.category))
                 if self._cur.fetchone() is None:
                     self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
-                                    ("circular_list", self.category, pickle.dumps([])))
+                                      ("circular_list", self.category, pickle.dumps([])))
                 self._con.commit()
 
             elif cache_method == "pickle":
