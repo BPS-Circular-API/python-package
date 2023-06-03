@@ -15,7 +15,7 @@ class API:
             raise ConnectionError("Invalid API Response. API says there are no categories.")
 
     # /latest endpoint
-    def latest(self, category: str or int, cached: bool = False) -> dict or None:
+    def latest(self, category: str or int) -> dict or None:
         """The `/latest` endpoint returns the latest circular from a particular category"""
         if type(category) == int:
             category = int(category)
@@ -27,9 +27,8 @@ class API:
                 raise ValueError("Invalid category Name")
 
         params = {'category': category}
-        endpoint = "latest" if not cached else "cached-latest"
 
-        request = requests.get(self.url + endpoint, params=params)
+        request = requests.get(self.url + "latest", params=params)
         json = request.json()
         try:
             json['http_status']
@@ -64,14 +63,14 @@ class API:
         if json['http_status'] == 200:
             return json['data'] if amount == -1 else json['data'][:amount]
 
-    def search(self, query: str or int) -> dict or None:
+    def search(self, query: str or int, amount: int = 1) -> dict or None:
         """The `/search` endpoint lets you search for a circular by its name or ID"""
-        if type(query) == int:
+        if query.isdigit() and len(query) == 4:
             query = int(query)
         elif type(query) != str:
             raise ValueError("Invalid Query")
 
-        params = {'title': query}
+        params = {'title': query, 'amount': amount}
 
         request = requests.get(self.url + "search", params=params)
         json = request.json()
@@ -119,7 +118,6 @@ class CircularChecker:
         else:
             raise ConnectionError("Invalid API Response. API says there are no categories.")
 
-
         if debug:
             self.set_cache = self._set_cache
             self.refresh_cache = self._refresh_cache
@@ -131,7 +129,6 @@ class CircularChecker:
 
         else:
             if category not in self.categories:
-                print(category)
                 raise ValueError("Invalid category Name")
 
         self._params = {'category': category}
