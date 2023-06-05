@@ -53,3 +53,14 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - SQL syntax error
+
+## 1.3.0 - 07/6/2023
+
+### Added
+- Dynamic categories support
+
+### Removed
+- `cached` option in latest circular
+
+### Improved
+- `CircularChecker` class now returns a sorted dict of new circulars

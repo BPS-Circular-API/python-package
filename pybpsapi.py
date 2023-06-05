@@ -246,7 +246,6 @@ class CircularChecker:
 
         if final_dict != old_cached:  # If the old and new dict are not the same
             new_circular_objects = [i for i in final_dict if i not in old_cached]
-            # print(f"{len(new_circular_objects)} new circular(s) found")
 
             for circular in new_circular_objects:
                 # check if they are in the database
@@ -255,6 +254,8 @@ class CircularChecker:
 
                 return_dict.append(circular)
 
+            # sort the return_dict by circular id in ascending order
+            return_dict.sort(key=lambda x: x['circular_id'])
             return return_dict
 
         else:

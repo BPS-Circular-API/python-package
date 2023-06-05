@@ -21,6 +21,21 @@ This package also features a well maintained and tried and tested circular-check
 pip install pybpsapi
 ```
 
+## Building
+
+To build the package, you can use the following command:
+
+```bash
+py -m build
+```
+
+And to upload, 
+
+```bash
+py -m twine upload dist/*
+```
+
+
 ## Contributing
 
 Contributions are welcome! Please feel free to open an issue or a pull request on the [GitHub repository](https://bpsapi.rajtech.me/r/python-package)
