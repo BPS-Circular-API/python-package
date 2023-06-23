@@ -64,3 +64,8 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 - `CircularChecker` class now returns a sorted dict of new circulars
+
+# v1.3.1 - 23/6/2023
+
+### Fixed
+- Changed the param name of /search to `query` from `title` to match API change

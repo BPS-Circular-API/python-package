@@ -70,7 +70,7 @@ class API:
         elif type(query) != str:
             raise ValueError("Invalid Query")
 
-        params = {'title': query, 'amount': amount}
+        params = {'query': query, 'amount': amount}
 
         request = requests.get(self.url + "search", params=params)
         json = request.json()

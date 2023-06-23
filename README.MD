@@ -48,3 +48,7 @@ Contributions are welcome! Please feel free to open an issue or a pull request o
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](https://bpsapi.rajtech.me/r/python-package/blob/master/LICENSE) file for details
+
+---
+
+Currently maintained by [Raj Dave](https://github.com/RajDave69)
