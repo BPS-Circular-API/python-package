@@ -69,3 +69,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Changed the param name of /search to `query` from `title` to match API change
+
+# v1.3.2 - 24/7/23
+
+### Fixed
+- Fixed dict key error in `CircularChecker` class.

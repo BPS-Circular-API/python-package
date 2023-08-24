@@ -255,7 +255,7 @@ class CircularChecker:
                 return_dict.append(circular)
 
             # sort the return_dict by circular id in ascending order
-            return_dict.sort(key=lambda x: x['circular_id'])
+            return_dict.sort(key=lambda x: x['id'])
             return return_dict
 
         else:
