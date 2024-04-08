@@ -5,7 +5,7 @@ import pickle
 class API:
     """Methods which communicate with the API"""
 
-    def __init__(self, url="https://bpsapi.rajtech.me/v1/"):
+    def __init__(self, url="https://bpsapi.rajtech.me/"):
         self.url = url
 
         json = requests.get(self.url + "categories").json()
@@ -15,10 +15,11 @@ class API:
             raise ConnectionError("Invalid API Response. API says there are no categories.")
 
     # /latest endpoint
-    def latest(self, category: str or int) -> dict or None:
+    def latest(self, category: str or int) -> dict | None:
         """The `/latest` endpoint returns the latest circular from a particular category"""
         if type(category) == int:
             category = int(category)
+
             if not 1 < category < 100:
                 raise ValueError("Invalid category Number")
 
@@ -26,10 +27,9 @@ class API:
             if category not in self.categories:
                 raise ValueError("Invalid category Name")
 
-        params = {'category': category}
-
-        request = requests.get(self.url + "latest", params=params)
+        request = requests.get(f"{self.url}latest/{category}")
         json = request.json()
+
         try:
             json['http_status']
         except KeyError:
@@ -38,7 +38,7 @@ class API:
             return json['data']
 
     # /list endpoint
-    def list(self, category: str or int, amount: int = -1) -> list or None:
+    def list(self, category: str or int, amount: int = -1) -> list | None:
         """The `/list` endpoint returns a list of circulars from a particular category"""
         if type(category) == int:
             category = int(category)
@@ -52,10 +52,9 @@ class API:
         if amount < -1:
             amount = -1
 
-        params = {'category': category}
-
-        request = requests.get(self.url + "list", params=params)
+        request = requests.get(f"{self.url}list/{category}")
         json = request.json()
+
         try:
             json['http_status']
         except KeyError:
@@ -63,7 +62,7 @@ class API:
         if json['http_status'] == 200:
             return json['data'] if amount == -1 else json['data'][:amount]
 
-    def search(self, query: str or int, amount: int = 1) -> dict or None:
+    def search(self, query: str or int, amount: int = 1) -> dict | None:
         """The `/search` endpoint lets you search for a circular by its name or ID"""
         if query.isdigit() and len(query) == 4:
             query = int(query)
@@ -85,7 +84,7 @@ class API:
             return json['data']
 
     # /getpng endpoint
-    def getpng(self, url: str) -> list or None:
+    def getpng(self, url: str) -> list | None:
         """The `/getpng` endpoint lets you get the pngs from a circular"""
         if type(url) != str:
             raise ValueError("Invalid URL")
@@ -106,13 +105,14 @@ class API:
 
 
 class CircularChecker:
-    def __init__(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False,
+    def __init__(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method=None, debug: bool = False,
                  **kwargs):
         self.url = url
         self.category = category
         self._cache = []
 
         json = requests.get(self.url + "categories").json()
+
         if json['http_status'] == 200:
             self.categories = json['data']
         else:
@@ -131,7 +131,6 @@ class CircularChecker:
             if category not in self.categories:
                 raise ValueError("Invalid category Name")
 
-        self._params = {'category': category}
         self.cache_method = cache_method
 
         if cache_method is not None:
@@ -217,16 +216,18 @@ class CircularChecker:
             self._cache = data
 
     def _refresh_cache(self):
-        request = requests.get(self.url + "list", params=self._params)
+        request = requests.get(f"{self.url}list/{self.category}")
         json = request.json()
+
         try:
             json['http_status']
         except KeyError:
             raise ValueError("Invalid API Response")
+
         if json['http_status'] == 200:
             self._set_cache(json['data'])
 
-    def check(self) -> list[dict] or list[None]:
+    def check(self) -> list[dict] | list[None]:
         return_dict = []
         old_cached = self.get_cache()
 
@@ -236,6 +237,7 @@ class CircularChecker:
 
         self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
         res = self._cur.fetchone()
+
         if res is None:
             cache = []
         else:
@@ -286,12 +288,12 @@ class CircularCheckerGroup:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 
-    def create(self, category, url: str = "https://bpsapi.rajtech.me/v1/", cache_method=None, debug: bool = False,
+    def create(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method=None, debug: bool = False,
                **kwargs):
         checker = CircularChecker(category, url, cache_method, debug, **kwargs)
         self._checkers.append(checker)
 
-    def check(self) -> dict[list[dict] or list[None]]:
+    def check(self) -> dict[list[dict]]:
         return_dict = {}
         for checker in self._checkers:
             return_dict[checker.category] = checker.check()

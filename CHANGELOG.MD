@@ -70,7 +70,12 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Changed the param name of /search to `query` from `title` to match API change
 
-# v1.3.2 - 24/7/23
+# v1.3.2 - 24/7/2023
 
 ### Fixed
 - Fixed dict key error in `CircularChecker` class.
+
+# v1.2.3 - 8/4/2024
+
+## Changed
+- The package now uses bpsapi.rajtech.me/latest/{category} instead of the params method for list and latest
