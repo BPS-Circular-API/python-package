@@ -7,6 +7,7 @@ class API:
 
     def __init__(self, url="https://bpsapi.rajtech.me/"):
         self.url = url
+        self.list = self.list_
 
         json = requests.get(self.url + "categories").json()
         if json['http_status'] == 200:
@@ -38,7 +39,7 @@ class API:
             return json['data']
 
     # /list endpoint
-    def list(self, category: str or int, amount: int = -1) -> list | None:
+    def list_(self, category: str or int, amount: int = -1) -> list | None:
         """The `/list` endpoint returns a list of circulars from a particular category"""
         if type(category) == int:
             category = int(category)
