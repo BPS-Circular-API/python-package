@@ -1,5 +1,5 @@
+import mysql.connector
 import requests
-import pickle
 
 
 class API:
@@ -41,8 +41,7 @@ class API:
     # /list endpoint
     def list_(self, category: str or int, amount: int = -1) -> list | None:
         """The `/list` endpoint returns a list of circulars from a particular category"""
-        if type(category) == int:
-            category = int(category)
+        if type(category) is int:
             if not 1 < category < 100:
                 raise ValueError("Invalid category Number")
 
@@ -106,7 +105,7 @@ class API:
 
 
 class CircularChecker:
-    def __init__(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method=None, debug: bool = False,
+    def __init__(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method='sqlite', debug: bool = False,
                  **kwargs):
         self.url = url
         self.category = category
@@ -134,87 +133,69 @@ class CircularChecker:
 
         self.cache_method = cache_method
 
-        if cache_method is not None:
-            if cache_method == "database":
-                try:
-                    self.db_name = kwargs['db_name']
-                    self.db_path = kwargs['db_path']
-                    self.db_table = kwargs['db_table']
-                except KeyError:
-                    raise ValueError("Invalid Database Parameters")
+        if cache_method is None:
+            raise ValueError("Invalid Cache Method")
 
-                import sqlite3
-                import os
+        if cache_method == "sqlite":
+            try:
+                self.db_name = kwargs['db_name']
+                self.db_path = kwargs['db_path']
+                self.db_table = kwargs['db_table']
+            except KeyError:
+                raise ValueError("Invalid Database Parameters. One of db_name, db_path, db_table not passed into kwargs")
 
-                if not os.path.exists(self.db_path + f"/{self.db_name}.db"):
-                    os.mkdir(self.db_path)
+            import sqlite3
+            import os
 
-                self._con = sqlite3.connect(self.db_path + f"/{self.db_name}.db")
-                self._cur = self._con.cursor()
+            if not os.path.exists(self.db_path + f"/{self.db_name}.db"):
+                os.mkdir(self.db_path)
 
-                self._cur.execute(
-                    f"CREATE TABLE IF NOT EXISTS {self.db_table} (title TEXT, category TEXT, data BLOB)")
+            self._con = sqlite3.connect(self.db_path + f"/{self.db_name}.db")
+            self._cur = self._con.cursor()
 
-                # check if the cache exists
-                self._cur.execute(f"SELECT * FROM {self.db_table} WHERE title = ? AND category = ?",
-                                  ("circular_list", self.category))
-                if self._cur.fetchone() is None:
-                    self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
-                                      ("circular_list", self.category, pickle.dumps([])))
-                self._con.commit()
+        elif cache_method == "mysql":
+            try:
+                self.db_name = kwargs['db_name']
+                self.db_user = kwargs['db_user']
+                self.db_host = kwargs['db_host']
+                self.db_port = kwargs['db_port']
+                self.db_password = kwargs['db_password']
+                self.db_table = kwargs['db_table']
 
-            elif cache_method == "pickle":
-                try:
-                    self.pickle_path = kwargs['pickle_path']
-                    self.pickle_name = kwargs['pickle_name']
-                except KeyError:
-                    raise ValueError("Invalid Pickle Path")
+            except KeyError:
+                raise ValueError("Invalid Database Parameters. One of db_name, db_user, db_host, db_port, db_password, db_table not passed into kwargs")
 
-                if self.pickle_name.endswith(".pickle"):
-                    self.pickle_name = self.pickle_name[:-7]
+            self._con = mysql.connector.python(
+                host=self.db_host, port=self.db_port, password=self.db_password,
+                user=self.db_user, database=self.db_name,
+            )
 
-                import os
-                if not os.path.exists(self.pickle_path):
-                    os.mkdir(self.pickle_path)
+            self._cur = self._con.cursor()
 
-                # create a pickle file if it doesn't exist
-                if not os.path.exists(self.pickle_path + f"/{self.pickle_name}.pickle"):
-                    with open(self.pickle_path + f"/{self.pickle_name}.pickle", "wb") as f:
-                        pickle.dump([], f)
-
-            else:
-                raise ValueError("Invalid Cache Method")
+        self._cur.execute(
+            f"CREATE TABLE IF NOT EXISTS {self.db_table} (category TEXT, id INTEGER, title TEXT, link TEXT)"
+        )
+        self._con.commit()
 
     def get_cache(self) -> list[list]:
-        if self.cache_method == "database":
-            self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
-            res = self._cur.fetchone()
-            if res is None:
-                return []
-            else:
-                return pickle.loads(res[2])
+        self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
+        res = self._cur.fetchall()
 
-        elif self.cache_method == "pickle":
+        return res
 
-            with open(self.pickle_path + f"/{self.pickle_name}.pickle", "rb") as f:
-                return pickle.load(f)
+    def _set_cache(self, data):
+        # data [ (id, title, link) ]
+        self._cur.executemany(
+            f"INSERT IGNORE INTO {self.db_table} (category, id, title, link) VALUES ({self.category}, ?, ?, ?)",
+            data
+        )
+        self._con.commit()
 
-        else:
-            return self._cache
-
-    def _set_cache(self, data, title: str = "circular_list"):
-        if self.cache_method == "database":
-            self._cur.execute(f"DELETE FROM {self.db_table} WHERE category = ?", (self.category,))
-            self._cur.execute(f"INSERT INTO {self.db_table} VALUES (?, ?, ?)",
-                              (title, self.category, pickle.dumps(data)))
-            self._con.commit()
-
-        elif self.cache_method == "pickle":
-            with open(self.pickle_path + f"/{self.pickle_name}.pickle", "wb") as f:
-                pickle.dump(data, f)
-
-        else:
-            self._cache = data
+    def _add_to_cache(self, id_, title, link):
+        self._cur.execute(
+            f"INSERT IGNORE INTO {self.db_table} (id, title, link) VALUES (?, ?, ?, ?)",
+            (self.category, id_, title, link)
+        )
 
     def _refresh_cache(self):
         request = requests.get(f"{self.url}list/{self.category}")
@@ -229,37 +210,34 @@ class CircularChecker:
             self._set_cache(json['data'])
 
     def check(self) -> list[dict] | list[None]:
-        return_dict = []
-        old_cached = self.get_cache()
-
-        if not old_cached:
-            self._refresh_cache()
-            return []
-
-        self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
-        res = self._cur.fetchone()
-
-        if res is None:
-            cache = []
-        else:
-            cache = pickle.loads(res[2])
+        self._cur.execute(f"SELECT COUNT(*) FROM {self.db_table} WHERE category = ?", (self.category,))
+        cached_circular_amount = self._cur.fetchone()[0]
 
         self._refresh_cache()
-        final_dict = self.get_cache()
+        new_circular_list = self.get_cache()
+        # data[(id, title, link)]
 
-        if final_dict != old_cached:  # If the old and new dict are not the same
-            new_circular_objects = [i for i in final_dict if i not in old_cached]
+        if len(new_circular_list) != cached_circular_amount:
+            self._cur.execute(f"SELECT id FROM {self.db_table} WHERE category = ?", (self.category,))
 
-            for circular in new_circular_objects:
-                # check if they are in the database
-                if circular in cache:
-                    continue
+            cached_circular_ids = self._cur.fetchall()
+            cached_circular_ids = [i[0] for i in cached_circular_ids]
 
-                return_dict.append(circular)
+            new_circular_objects = [i for i in new_circular_list if i[0] not in cached_circular_ids]
 
-            # sort the return_dict by circular id in ascending order
-            return_dict.sort(key=lambda x: x['id'])
-            return return_dict
+            # (id, title, link) -> {'id': id, 'title': title, 'link': link}
+            new_circular_objects = [
+                {
+                    'id': i[0],
+                    'title': i[1],
+                    'link': [2]
+                }
+                for i in new_circular_objects
+            ]
+
+            # sort the new_circular_objects by circular id in ascending order
+            new_circular_objects.sort(key=lambda x: x['id'])
+            return new_circular_objects
 
         else:
             return []
@@ -269,13 +247,10 @@ class CircularCheckerGroup:
     def __init__(self, *args, **kwargs):
         self._checkers = []
 
-        if kwargs.get("debug"):
-            self.debug = True
-        else:
-            self.debug = False
+        self.debug = bool(kwargs.get("debug"))
 
         for arg in args:
-            if type(arg) != CircularChecker:
+            if type(arg) is not CircularChecker:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 
@@ -285,7 +260,7 @@ class CircularCheckerGroup:
     def add(self, checker: CircularChecker, *args: CircularChecker):
         self._checkers.append(checker)
         for arg in args:
-            if type(arg) != CircularChecker:
+            if type(arg) is not CircularChecker:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 

@@ -1,7 +1,7 @@
 [project]
 name = "pybpsapi"
 version = "1.3.4"
-description = "This package is a Python wrapper for the BPS API. It supports all the five endpoints of the API, and also contains a good circular-checking system."
+description = "This package is a Python wrapper for the BPS Circular API. It supports all the five endpoints of the API, and also contains a good circular-checking system."
 author = "Raj Dave"
 author-email = "rajdave8002@gmail.com"
 homepage = "https://bpsapi.rajtech.me/docs/"
