@@ -105,8 +105,7 @@ class API:
 
 
 class CircularChecker:
-    def __init__(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method='sqlite', debug: bool = False,
-                 **kwargs):
+    def __init__(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method='sqlite', **kwargs):
         self.url = url
         self.category = category
         self._cache = []
@@ -114,21 +113,21 @@ class CircularChecker:
         json = requests.get(self.url + "categories").json()
 
         if json['http_status'] == 200:
-            self.categories = json['data']
+            categories = json['data']
         else:
             raise ConnectionError("Invalid API Response. API says there are no categories.")
 
-        if debug:
+        if kwargs.get("debug"):
             self.set_cache = self._set_cache
             self.refresh_cache = self._refresh_cache
 
-        if type(category) == int:
-            category = int(category)
-            if not 1 < category < 100:
+        # If category id is passed
+        if type(self.category) is int:
+            if not 1 < self.category < 100:
                 raise ValueError("Invalid category Number")
-
+        # If category name is passed
         else:
-            if category not in self.categories:
+            if self.category not in categories:
                 raise ValueError("Invalid category Name")
 
         self.cache_method = cache_method
