@@ -75,7 +75,18 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Fixed dict key error in `CircularChecker` class.
 
-# v1.2.3 - 8/4/2024
+# v1.3.3 - 8/4/2024
 
-## Changed
+## Improved
 - The package now uses bpsapi.rajtech.me/latest/{category} instead of the params method for list and latest
+
+# v1.4 - 12/8/24
+
+### Fixed
+- CircularChecker's false positives 
+
+### Removed 
+- Pickle method for cache storage
+
+### Added
+- mysql method for cache storage
