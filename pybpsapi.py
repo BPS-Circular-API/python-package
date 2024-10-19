@@ -18,7 +18,7 @@ class API:
     # /latest endpoint
     def latest(self, category: str or int) -> dict | None:
         """The `/latest` endpoint returns the latest circular from a particular category"""
-        if type(category) == int:
+        if type(category) is int:
             category = int(category)
 
             if not 1 < category < 100:
@@ -39,7 +39,7 @@ class API:
             return json['data']
 
     # /list endpoint
-    def list_(self, category: str or int, amount: int = -1) -> list | None:
+    def list_(self, category: str or int, amount: int = None) -> list | None:
         """The `/list` endpoint returns a list of circulars from a particular category"""
         if type(category) is int:
             if not 1 < category < 100:
@@ -49,8 +49,8 @@ class API:
             if category not in self.categories:
                 raise ValueError("Invalid category Name")
 
-        if amount < -1:
-            amount = -1
+        if amount < 1:
+            amount = None
 
         request = requests.get(f"{self.url}list/{category}")
         json = request.json()
@@ -60,7 +60,7 @@ class API:
         except KeyError:
             raise ConnectionError("Invalid API Response")
         if json['http_status'] == 200:
-            return json['data'] if amount == -1 else json['data'][:amount]
+            return json['data'][:amount]
 
     def search(self, query: str or int, amount: int = 1) -> dict | None:
         """The `/search` endpoint lets you search for a circular by its name or ID"""
@@ -230,7 +230,7 @@ class CircularChecker:
                 {
                     'id': i[0],
                     'title': i[1],
-                    'link': [2]
+                    'link': i[2]
                 }
                 for i in new_circular_objects
             ]
@@ -247,14 +247,12 @@ class CircularCheckerGroup:
     def __init__(self, *args, **kwargs):
         self._checkers = []
 
-        self.debug = bool(kwargs.get("debug"))
-
         for arg in args:
             if type(arg) is not CircularChecker:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 
-        if self.debug:
+        if bool(kwargs.get("debug")):
             self.checkers = self._checkers
 
     def add(self, checker: CircularChecker, *args: CircularChecker):
@@ -264,12 +262,11 @@ class CircularCheckerGroup:
                 raise ValueError("Invalid CircularChecker Object")
             self._checkers.append(arg)
 
-    def create(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method=None, debug: bool = False,
-               **kwargs):
-        checker = CircularChecker(category, url, cache_method, debug, **kwargs)
+    def create(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method=None, **kwargs):
+        checker = CircularChecker(category, url, cache_method, **kwargs)
         self._checkers.append(checker)
 
-    def check(self) -> dict[list[dict]]:
+    def check(self) -> dict[list[dict], ...] | dict:
         return_dict = {}
         for checker in self._checkers:
             return_dict[checker.category] = checker.check()
@@ -279,7 +276,7 @@ class CircularCheckerGroup:
         for checker in self._checkers:
             checker.refresh_cache()
 
-    def get_cache(self) -> dict[list[list]]:
+    def get_cache(self) -> dict[list[list]] | dict:
         return_dict = {}
         for checker in self._checkers:
             return_dict[checker.category] = checker.get_cache()
