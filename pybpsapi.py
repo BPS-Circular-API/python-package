@@ -1,5 +1,7 @@
 import mysql.connector
 import requests
+import sqlite3
+import os
 
 
 class API:
@@ -135,16 +137,14 @@ class CircularChecker:
         if cache_method is None:
             raise ValueError("Invalid Cache Method")
 
-        if cache_method == "sqlite":
+        if self.cache_method == "sqlite":
             try:
                 self.db_name = kwargs['db_name']
                 self.db_path = kwargs['db_path']
                 self.db_table = kwargs['db_table']
             except KeyError:
-                raise ValueError("Invalid Database Parameters. One of db_name, db_path, db_table not passed into kwargs")
-
-            import sqlite3
-            import os
+                raise ValueError(
+                    "Invalid Database Parameters. One of db_name, db_path, db_table not passed into kwargs")
 
             if not os.path.exists(self.db_path + f"/{self.db_name}.db"):
                 os.mkdir(self.db_path)
@@ -162,65 +162,90 @@ class CircularChecker:
                 self.db_table = kwargs['db_table']
 
             except KeyError:
-                raise ValueError("Invalid Database Parameters. One of db_name, db_user, db_host, db_port, db_password, db_table not passed into kwargs")
+                raise ValueError(
+                    "Invalid Database Parameters. One of db_name, db_user, db_host, db_port, db_password, db_table not passed into kwargs")
 
-            self._con = mysql.connector.python(
+            self._con = mysql.connector.connect(
                 host=self.db_host, port=self.db_port, password=self.db_password,
                 user=self.db_user, database=self.db_name,
             )
+            self._cur = self._con.cursor(prepared=True)
 
-            self._cur = self._con.cursor()
+        else:
+            raise Exception("Invalid cache method. Only mysql and sqlite allowed")
 
         self._cur.execute(
-            f"CREATE TABLE IF NOT EXISTS {self.db_table} (category TEXT, id INTEGER, title TEXT, link TEXT)"
+            f"""
+        CREATE TABLE IF NOT EXISTS  {self.db_table}  (
+            category	TEXT,
+            id	INTEGER UNIQUE,
+            title	TEXT,
+            link	TEXT
+        )
+        """
         )
         self._con.commit()
 
-    def get_cache(self) -> list[list]:
-        self._cur.execute(f"SELECT * FROM {self.db_table} WHERE category = ?", (self.category,))
+
+
+    def get_cache(self) -> list[list] | list:
+        self._cur.execute(f"SELECT id, title, link FROM {self.db_table} WHERE category = ?", (self.category,))
         res = self._cur.fetchall()
 
         return res
 
     def _set_cache(self, data):
         # data [ (id, title, link) ]
-        self._cur.executemany(
-            f"INSERT IGNORE INTO {self.db_table} (category, id, title, link) VALUES ({self.category}, ?, ?, ?)",
-            data
-        )
+        query = f"INSERT OR IGNORE INTO {self.db_table} (category, id, title, link) VALUES (?, ?, ?, ?)"
+
+        if self.cache_method == 'mysql':
+            query = query.replace("OR ", "")
+
+        self._cur.executemany(query, tuple((self.category, *d) for d in data))
         self._con.commit()
 
+
     def _add_to_cache(self, id_, title, link):
-        self._cur.execute(
-            f"INSERT IGNORE INTO {self.db_table} (id, title, link) VALUES (?, ?, ?, ?)",
-            (self.category, id_, title, link)
-        )
+        query = f"INSERT OR IGNORE INTO {self.db_table} (id, title, link) VALUES (?, ?, ?, ?)"
+
+        if self.cache_method == 'mysql':
+            query = query.replace("OR ", "")
+
+        self._cur.execute(query, (self.category, id_, title, link))
 
     def _refresh_cache(self):
         request = requests.get(f"{self.url}list/{self.category}")
-        json = request.json()
+        json: dict = request.json()
 
         try:
             json['http_status']
         except KeyError:
             raise ValueError("Invalid API Response")
 
+        self._cur.execute(f"SELECT id FROM {self.db_table} WHERE category = ?", (self.category,))
+        cached_ids: list = self._cur.fetchall()
+        cached_ids: tuple[str, ...] = tuple([str(i[0]) for i in cached_ids])
+
         if json['http_status'] == 200:
-            self._set_cache(json['data'])
+            self._set_cache(
+                [
+                    (i['id'], i['title'], i['link'])
+                    for i in json['data']
+                    if i['id'] not in cached_ids
+                ]
+            )
 
     def check(self) -> list[dict] | list[None]:
-        self._cur.execute(f"SELECT COUNT(*) FROM {self.db_table} WHERE category = ?", (self.category,))
-        cached_circular_amount = self._cur.fetchone()[0]
+        self._cur.execute(f"SELECT id FROM {self.db_table} WHERE category = ?", (self.category,))
+
+        cached_circular_ids = self._cur.fetchall()
+        cached_circular_ids = [i[0] for i in cached_circular_ids]
 
         self._refresh_cache()
         new_circular_list = self.get_cache()
-        # data[(id, title, link)]
+        # data [(id, title, link)]
 
-        if len(new_circular_list) != cached_circular_amount:
-            self._cur.execute(f"SELECT id FROM {self.db_table} WHERE category = ?", (self.category,))
-
-            cached_circular_ids = self._cur.fetchall()
-            cached_circular_ids = [i[0] for i in cached_circular_ids]
+        if len(new_circular_list) != len(cached_circular_ids):
 
             new_circular_objects = [i for i in new_circular_list if i[0] not in cached_circular_ids]
 
