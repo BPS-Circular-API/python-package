@@ -65,22 +65,22 @@ All notable changes to this project will be documented in this file.
 ### Improved
 - `CircularChecker` class now returns a sorted dict of new circulars
 
-# v1.3.1 - 23/6/2023
+## v1.3.1 - 23/6/2023
 
 ### Fixed
 - Changed the param name of /search to `query` from `title` to match API change
 
-# v1.3.2 - 24/7/2023
+## v1.3.2 - 24/7/2023
 
 ### Fixed
 - Fixed dict key error in `CircularChecker` class.
 
-# v1.3.3 - 8/4/2024
+## v1.3.3 - 8/4/2024
 
-## Improved
+### Improved
 - The package now uses bpsapi.rajtech.me/latest/{category} instead of the params method for list and latest
 
-# v1.4 - 12/8/24
+## v1.4 - 12/8/24
 
 ### Fixed
 - CircularChecker's false positives 
@@ -90,3 +90,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - mysql method for cache storage
+
+## v1.4.1 - 24/8/24
+
+### Fixed
+- A small bug which caused an error when `amount` wasn't passed in list
+- Fixed type hints having `or` instead of |
+
+### Improved
+- Many little improvements
