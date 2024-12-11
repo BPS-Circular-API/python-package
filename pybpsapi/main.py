@@ -74,9 +74,10 @@ class API:
     # /search endpoint
     def search(self, query: str | int, amount: int = 1) -> dict | None:
         """The `/search` endpoint lets you search for a circular by its name or ID"""
-        if query.isdigit() and len(query) == 4:
-            query = int(query)
-        elif type(query) is not str:
+        if type(query) is str:
+            if query.isdigit() and len(query) == 4:
+                query = int(query)
+        elif type(query) is not int:
             raise ValueError("Invalid Query. It isn't string")
 
         params = {'query': query, 'amount': amount}
@@ -92,7 +93,7 @@ class API:
     # /getpng endpoint
     def getpng(self, url: str) -> list | None:
         """The `/getpng` endpoint lets you get the pngs from a circular"""
-        if type(url) != str:
+        if type(url) is not str:
             raise ValueError("Invalid URL. It isn't string.")
 
         params = {'url': url}
@@ -115,7 +116,7 @@ class CircularChecker:
     ):
         self.api_url = api_url
         self.fallback_api_url = fallback_api_url
-        self.category = category
+        self.category = str(category) if type(category) is None else category
         self.cache_method = cache_method
 
         # Get category names from API
@@ -123,7 +124,7 @@ class CircularChecker:
 
         # If this circular checker is supposed to be for a specific category of circulars only
         # Check if the category name or id is valid
-        if category is not None:
+        if category != 'None':
             if type(self.category) is int:
                 if not _min_category_id <= self.category:
                     raise ValueError("Invalid category Number")
@@ -182,7 +183,7 @@ class CircularChecker:
             cur.execute(
                 f"""
             CREATE TABLE IF NOT EXISTS  {self.db_table}  (
-                category	VARCHAR(15) PRIMARY KEY,
+                category	VARCHAR(15) PRIMARY KEY NOT NULL UNIQUE,
                 latest_circular_id	INTEGER
             )
             """
@@ -267,8 +268,8 @@ class CircularChecker:
     # Method to check for new circulars
     def check(self) -> list[dict] | list:
 
-        if cache := self.get_cache() is not None:
-            res = self._send_api_request(f'new-circulars/{cache}')
+        if (cached_circular_id := self.get_cache()) is not None:
+            res = self._send_api_request(f'new-circulars/{cached_circular_id}')
         else:
             res = self._send_api_request('new-circulars/')
         # it's sorted in descending order
@@ -276,6 +277,9 @@ class CircularChecker:
         # If the API found new circulars
         if len(res) > 0:
             self._set_cache(res[0]['id'])
+
+            if cached_circular_id is None:
+                return []
 
             # If this circular-checker is meant for only one category,
             # remove circulars of any other category
