@@ -116,15 +116,16 @@ class CircularChecker:
     ):
         self.api_url = api_url
         self.fallback_api_url = fallback_api_url
-        self.category = str(category) if type(category) is None else category
+        self.category = str(category) if category is None else category
         self.cache_method = cache_method
 
         # Get category names from API
+        del category # To avoid confusion with self.category
         categories = self._send_api_request("categories")
 
         # If this circular checker is supposed to be for a specific category of circulars only
         # Check if the category name or id is valid
-        if category != 'None':
+        if self.category != 'None':
             if type(self.category) is int:
                 if not _min_category_id <= self.category:
                     raise ValueError("Invalid category Number")
@@ -283,12 +284,14 @@ class CircularChecker:
 
             # If this circular-checker is meant for only one category,
             # remove circulars of any other category
-            if self.category:
+            if self.category != 'None':
                 res = [circular for circular in res if circular['category'] == self.category]
 
                 # remove the 'category' key from each of the circular objects
                 for circular in res:
                     del circular['category']
+
+            res.reverse()
         return res
 
 
