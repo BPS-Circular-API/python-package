@@ -80,7 +80,7 @@ All notable changes to this project will be documented in this file.
 ### Improved
 - The package now uses bpsapi.rajtech.me/latest/{category} instead of the params method for list and latest
 
-## v1.4 - 12/8/24
+## v1.4.0 - 12/8/24
 
 ### Fixed
 - CircularChecker's false positives 
@@ -99,3 +99,13 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 - Many little improvements
+
+## v1.5.0 - 13/2/25
+
+### Changed
+- The package is now a folder instead of a single python file
+- CircularChecker now caches only a single integer instead of all previous circulars
+- CircularChecker now uses the new API endpoint for new circulars
+
+### Added
+- The ability to use list() latest() search() getpng() without creating an instance of API class

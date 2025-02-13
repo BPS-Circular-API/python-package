@@ -175,7 +175,7 @@ class CircularChecker:
                     f.write(b'')
 
         else:
-            raise ValueError("Invalid cache method. Only mysql and sqlite allowed")
+            raise ValueError("Invalid cache method. Only mysql, sqlite, pickle allowed")
 
         # For sqlite and mysql, create a table if it doesn't exist in the database
         if self.cache_method in ('sqlite', 'mysql'):
