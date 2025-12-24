@@ -1,7 +1,13 @@
 import pickle
 import warnings
-import mysql.connector
-import requests
+try:
+    import mysql.connector as mysql_connector
+except Exception:
+    mysql_connector = None
+try:
+    import requests
+except Exception:
+    requests = None
 import sqlite3
 import os
 
@@ -11,6 +17,8 @@ class API:
     """Methods which communicate with the API"""
 
     def __init__(self, url="https://bpsapi.rajtech.me/"):
+        if requests is None:
+            raise ImportError("requests is required to use API class")
         self.url = url
         self.list = self.list_
 
@@ -116,8 +124,10 @@ class CircularChecker:
     ):
         self.api_url = api_url
         self.fallback_api_url = fallback_api_url
-        self.category = str(category) if category is None else category
+        self.category = category
         self.cache_method = cache_method
+        # internal cache key used for storage (DB/pickle). Use a stable string instead of None
+        self._category_key = str(self.category) if self.category is not None else '__ALL__'
 
         # Get category names from API
         del category # To avoid confusion with self.category
@@ -125,7 +135,7 @@ class CircularChecker:
 
         # If this circular checker is supposed to be for a specific category of circulars only
         # Check if the category name or id is valid
-        if self.category != 'None':
+        if self.category is not None:
             if type(self.category) is int:
                 if not _min_category_id <= self.category:
                     raise ValueError("Invalid category Number")
@@ -139,6 +149,7 @@ class CircularChecker:
         # For the sqlite cache method
         if self.cache_method == "sqlite":
             try:
+                self.db_name = kwargs['db_name']
                 self.db_path = kwargs['db_path']
                 self.db_table = kwargs['db_table']
             except KeyError:
@@ -147,10 +158,10 @@ class CircularChecker:
 
             # Create local db if it does not exist
             if not os.path.exists(self.db_path):
-                os.mkdir(self.db_path)
+                os.makedirs(self.db_path, exist_ok=True)
 
         # For the mysql/mariadb cache method
-        elif cache_method == "mysql":
+        elif self.cache_method == "mysql":
             try:
                 self.db_name = kwargs['db_name']
                 self.db_user = kwargs['db_user']
@@ -164,7 +175,7 @@ class CircularChecker:
                     "Invalid Database Parameters. One of db_name, db_user, db_host, db_port, db_password, db_table not passed into kwargs")
 
         # For the pickle cache method
-        elif cache_method == 'pickle':
+        elif self.cache_method == 'pickle':
             try:
                 self.cache_file = kwargs['cache_file']
             except KeyError:
@@ -172,7 +183,7 @@ class CircularChecker:
 
             if not os.path.exists(self.cache_file):
                 with open(self.cache_file, 'wb') as f:
-                    f.write(b'')
+                    f.write(pickle.dumps({}))
 
         else:
             raise ValueError("Invalid cache method. Only mysql, sqlite, pickle allowed")
@@ -184,7 +195,7 @@ class CircularChecker:
             cur.execute(
                 f"""
             CREATE TABLE IF NOT EXISTS  {self.db_table}  (
-                category	VARCHAR(15) PRIMARY KEY NOT NULL UNIQUE,
+                category	TEXT PRIMARY KEY NOT NULL UNIQUE,
                 latest_circular_id	INTEGER
             )
             """
@@ -198,6 +209,8 @@ class CircularChecker:
     def _send_api_request(self, endpoint: str, fallback=False) -> dict:
         try:
             api_url = self.fallback_api_url if fallback else self.api_url
+            if requests is None:
+                raise ImportError("requests is required to send API requests")
             request = requests.get(api_url + endpoint, timeout=5)
             json = request.json()
         except requests.exceptions.ConnectionError:
@@ -213,14 +226,16 @@ class CircularChecker:
 
     def _get_db(self):
         if self.cache_method == 'mysql':
-            con = mysql.connector.connect(
-                host=self.db_host, port=self.db_port, password=self.db_password,
+            if mysql_connector is None:
+                raise ImportError("mysql.connector is required for mysql cache_method")
+            con = mysql_connector.connect(
+                host=self.db_host, port=int(self.db_port), password=self.db_password,
                 user=self.db_user, database=self.db_name,
             )
-            cur = con.cursor(prepared=True)
+            cur = con.cursor()
 
         elif self.cache_method == 'sqlite':
-            con = sqlite3.connect(self.db_path + f"/{self.db_name}.db")
+            con = sqlite3.connect(os.path.join(self.db_path, f"{self.db_name}.db"))
             cur = con.cursor()
         else:
             raise ValueError("Method not supported for this cache method")
@@ -230,23 +245,41 @@ class CircularChecker:
 
     # Method to retrieve cache from the database
     def get_cache(self) -> int | None:
+        res = None
         if self.cache_method in ('sqlite', 'mysql'):
             con, cur = self._get_db()
 
-            cur.execute(f"SELECT latest_circular_id FROM {self.db_table} WHERE category = ?", (self.category,))
-            res = cur.fetchone()
+            if self.cache_method == 'mysql':
+                cur.execute(f"SELECT latest_circular_id FROM {self.db_table} WHERE category = %s", (self._category_key,))
+            else:
+                cur.execute(f"SELECT latest_circular_id FROM {self.db_table} WHERE category = ?", (self._category_key,))
 
-            if res is not None:
-                res = res[0]
+            row = cur.fetchone()
+            con.close()
+
+            if row is not None:
+                res = row[0]
 
         elif self.cache_method == 'pickle':
-            with open(self.cache_file, 'rb') as f:
-                res = pickle.load(f)
+            try:
+                with open(self.cache_file, 'rb') as f:
+                    data = pickle.load(f)
+            except (EOFError, FileNotFoundError):
+                data = None
+
+            if isinstance(data, dict):
+                res = data.get(self._category_key)
+            else:
+                # backward compatibility: single int value
+                res = data
         else:
             raise ValueError("Method not supported for this cache method")
 
         if res is not None:
-            res = int(res)
+            try:
+                res = int(res)
+            except (TypeError, ValueError):
+                res = None
 
         return res
 
@@ -256,14 +289,33 @@ class CircularChecker:
             con, cur = self._get_db()
             # cur.execute(f"DELETE FROM {self.db_table} WHERE category = ?", (self.cate))
 
-            query = f"REPLACE INTO {self.db_table} (category, latest_circular_id) VALUES (?, ?)"
+            if self.cache_method == 'mysql':
+                query = f"REPLACE INTO {self.db_table} (category, latest_circular_id) VALUES (%s, %s)"
+                cur.execute(query, (self._category_key, circular_id,))
+            else:
+                query = f"REPLACE INTO {self.db_table} (category, latest_circular_id) VALUES (?, ?)"
+                cur.execute(query, (self._category_key, circular_id,))
 
-            cur.execute(query, (self.category, circular_id,))
             con.commit()
+            con.close()
 
         elif self.cache_method == 'pickle':
+            # keep a dict of category_key -> circular_id
+            data = {}
+            try:
+                if os.path.exists(self.cache_file):
+                    with open(self.cache_file, 'rb') as f:
+                        existing = pickle.load(f)
+                        if isinstance(existing, dict):
+                            data = existing
+                        elif isinstance(existing, int):
+                            data = {'__ALL__': existing}
+            except Exception:
+                data = {}
+
+            data[self._category_key] = circular_id
             with open(self.cache_file, 'wb') as f:
-                f.write(pickle.dumps(circular_id))
+                f.write(pickle.dumps(data))
 
 
     # Method to check for new circulars
@@ -277,19 +329,60 @@ class CircularChecker:
 
         # If the API found new circulars
         if len(res) > 0:
-            self._set_cache(res[0]['id'])
+            # If this circular-checker is meant for only one category,
+            # filter first so we can set a per-category cache based on that category only
+            if self.category is not None:
+                def _matches_category(c):
+                    cat = c.get('category')
+                    if isinstance(self.category, int):
+                        try:
+                            return int(cat) == self.category
+                        except Exception:
+                            return False
+                    else:
+                        return str(cat) == str(self.category)
+
+                filtered = [c for c in res if _matches_category(c)]
+
+                if cached_circular_id is None:
+                    # initial run: initialize cache for this category and don't return historical items
+                    if filtered:
+                        try:
+                            self._set_cache(filtered[0]['id'])
+                        except Exception:
+                            pass
+                        return []
+                    else:
+                        try:
+                            self._set_cache(res[0]['id'])
+                        except Exception:
+                            pass
+                        return []
+
+                # subsequent runs: if there are matching items, update cache to newest matching id and return them
+                if filtered:
+                    try:
+                        self._set_cache(filtered[0]['id'])
+                    except Exception:
+                        pass
+
+                    for circular in filtered:
+                        del circular['category']
+
+                    filtered.reverse()
+                    return filtered
+
+                # no new items for this category
+                return []
+
+            # global checker (no specific category)
+            try:
+                self._set_cache(res[0]['id'])
+            except Exception:
+                pass
 
             if cached_circular_id is None:
                 return []
-
-            # If this circular-checker is meant for only one category,
-            # remove circulars of any other category
-            if self.category != 'None':
-                res = [circular for circular in res if circular['category'] == self.category]
-
-                # remove the 'category' key from each of the circular objects
-                for circular in res:
-                    del circular['category']
 
             res.reverse()
         return res
@@ -324,7 +417,7 @@ class CircularCheckerGroup:
 
     # Method to create a circular checker and add it to the group
     def create(self, category, url: str = "https://bpsapi.rajtech.me/", cache_method=None, **kwargs):
-        checker = CircularChecker(category, url, cache_method, **kwargs)
+        checker = CircularChecker(category, api_url=url, cache_method=cache_method, **kwargs)
         self._checkers.append(checker)
 
     # Method to check for new circulars in each one of the checkers
